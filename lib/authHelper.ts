@@ -11,66 +11,67 @@ export interface AuthUser {
   isDemo: boolean;
 }
 
+/**
+ * Validates the caller's identity strictly via Firebase JWT ID Token.
+ * Accepts token from Authorization header ('Bearer <jwt>') OR 'apparelflow_jwt' cookie.
+ * If no valid token is provided, returns null to lock down the application.
+ */
 export async function getCurrentUser(): Promise<AuthUser | null> {
   const reqHeaders = await headers();
   const reqCookies = await cookies();
 
-  // 1. Check for Demo Role Switcher header or cookie first (for Audit Evaluation)
-  const demoRoleHeader = reqHeaders.get('x-demo-role') as Role | null;
-  const demoRoleCookie = reqCookies.get('apparelflow_role')?.value as Role | null;
-  const activeRole = demoRoleHeader || demoRoleCookie;
-
-  // 2. Check for Firebase Bearer Token
+  // 1. Extract Firebase JWT from Authorization header or apparelflow_jwt cookie
   const authHeader = reqHeaders.get('authorization');
+  let token: string | null = null;
+
   if (authHeader?.startsWith('Bearer ')) {
-    const token = authHeader.split('Bearer ')[1];
-    try {
-      const decoded = await adminAuth.verifyIdToken(token);
-      if (decoded.email) {
-        const dbUser = await prisma.user.findUnique({
-          where: { email: decoded.email },
-        });
+    token = authHeader.split('Bearer ')[1].trim();
+  } else {
+    token = reqCookies.get('apparelflow_jwt')?.value || null;
+  }
 
-        if (dbUser) {
-          // If demo role override is explicitly requested in session, respect it for evaluation
-          return {
-            id: dbUser.id,
-            email: dbUser.email,
-            fullName: dbUser.fullName,
-            role: (activeRole && Object.values(Role).includes(activeRole)) ? activeRole : dbUser.role,
-            isDemo: false,
-          };
-        }
-      }
-    } catch (err) {
-      console.warn('Firebase token verification error:', err);
+  // 2. Strict Lock: If no token exists, caller is completely unauthenticated
+  if (!token) {
+    return null;
+  }
+
+  try {
+    // 3. Cryptographically verify the Firebase ID Token
+    const decoded = await adminAuth.verifyIdToken(token);
+    if (!decoded.email) {
+      return null;
     }
-  }
 
-  // 3. Fallback to Demo User according to activeRole (default to cutting_supervisor)
-  const targetRole = (activeRole && Object.values(Role).includes(activeRole))
-    ? activeRole
-    : Role.cutting_supervisor;
+    // 4. Retrieve or synchronize the user from Google Cloud SQL PostgreSQL
+    let dbUser = await prisma.user.findUnique({
+      where: { email: decoded.email },
+    });
 
-  const emailMap: Record<Role, string> = {
-    [Role.cutting_supervisor]: 'supervisor@apparelflow.com',
-    [Role.cutting_verifier]: 'verifier@apparelflow.com',
-    [Role.sewing_supervisor]: 'sewing@apparelflow.com',
-  };
+    if (!dbUser) {
+      const assignedRole = (decoded.role as Role) || Role.cutting_supervisor;
+      dbUser = await prisma.user.create({
+        data: {
+          email: decoded.email,
+          fullName: decoded.name || decoded.email.split('@')[0],
+          role: assignedRole,
+        },
+      });
+    }
 
-  const demoUser = await prisma.user.findUnique({
-    where: { email: emailMap[targetRole] },
-  });
+    // Role switcher evaluation header or cookie (if supervisor wants to evaluate verifier/sewing perspective)
+    const demoRoleHeader = reqHeaders.get('x-demo-role') as Role | null;
+    const demoRoleCookie = reqCookies.get('apparelflow_role')?.value as Role | null;
+    const activeRole = demoRoleHeader || demoRoleCookie;
 
-  if (demoUser) {
     return {
-      id: demoUser.id,
-      email: demoUser.email,
-      fullName: demoUser.fullName,
-      role: demoUser.role,
-      isDemo: true,
+      id: dbUser.id,
+      email: dbUser.email,
+      fullName: dbUser.fullName,
+      role: activeRole && Object.values(Role).includes(activeRole) ? activeRole : dbUser.role,
+      isDemo: false,
     };
+  } catch (err) {
+    console.warn('Firebase JWT token verification failed:', err);
+    return null;
   }
-
-  return null;
 }

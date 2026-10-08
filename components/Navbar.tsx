@@ -24,6 +24,10 @@ export default function Navbar() {
   const { user, switchRole, signInWithGoogle, logout, availableRoles } = useAuth();
   const [dropdownOpen, setDropdownOpen] = useState(false);
 
+  if (pathname === '/login') {
+    return null;
+  }
+
   const navLinks = [
     { href: '/', label: 'Dashboard', icon: Layers },
     { href: '/orders', label: 'Cutting Orders', icon: Scissors },
