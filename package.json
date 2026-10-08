@@ -7,7 +7,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "postinstall": "prisma generate"
+    "postinstall": "prisma generate",
+    "seed": "npx tsx prisma/seed.ts",
+    "init-admin": "npx tsx scripts/init-admin.ts"
   },
   "dependencies": {
     "@prisma/client": "^5.22.0",
