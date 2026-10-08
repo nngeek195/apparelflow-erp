@@ -1,12 +1,10 @@
 import { NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '@/lib/prisma';
 import { createClient } from '@/utils/supabase/server';
-
-const prisma = new PrismaClient();
 
 export async function POST(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // 1. Enforce Server-Side RBAC
@@ -17,12 +15,13 @@ export async function POST(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const role = user.user_metadata?.role;
+    const rawRole = user.user_metadata?.role;
+    const role = (rawRole || '').toUpperCase();
     if (role !== 'ADMIN' && role !== 'CUTTING_VERIFIER') {
       return NextResponse.json({ error: 'Forbidden: Insufficient privileges' }, { status: 403 });
     }
 
-    const orderId = params.id;
+    const { id: orderId } = await params;
     const body = await request.json();
     const { decision, rejectionNote, items } = body; // items: Array<{ id: string, actualQty: number }>
 

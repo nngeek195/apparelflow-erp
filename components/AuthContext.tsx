@@ -25,21 +25,27 @@ const AuthContext = createContext<AuthContextType>({
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<CustomUser | null>(null);
   const [loading, setLoading] = useState(true);
-  const supabase = createClient();
 
   useEffect(() => {
+    const supabase = createClient();
+
     // 1. Fetch initial session on load
     const fetchSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session?.user) {
-        setUser({
-          id: session.user.id,
-          email: session.user.email,
-          fullName: session.user.user_metadata?.fullName,
-          role: session.user.user_metadata?.role,
-        });
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user) {
+          setUser({
+            id: session.user.id,
+            email: session.user.email,
+            fullName: session.user.user_metadata?.fullName,
+            role: session.user.user_metadata?.role,
+          });
+        }
+      } catch (err) {
+        console.error('Error fetching session:', err);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     };
 
     fetchSession();
@@ -60,7 +66,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
 
     return () => subscription.unsubscribe();
-  }, [supabase]);
+  }, []);
 
   return (
     <AuthContext.Provider value={{ user, loading }}>

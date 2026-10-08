@@ -1,8 +1,6 @@
 import { NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '@/lib/prisma';
 import { createClient } from '@/utils/supabase/server';
-
-const prisma = new PrismaClient();
 
 export async function GET(request: Request) {
   try {
@@ -14,7 +12,8 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const role = user.user_metadata?.role;
+    const rawRole = user.user_metadata?.role;
+    const role = (rawRole || '').toUpperCase();
     if (role !== 'ADMIN' && role !== 'SEWING_SUPERVISOR') {
       return NextResponse.json({ error: 'Forbidden: Insufficient privileges' }, { status: 403 });
     }

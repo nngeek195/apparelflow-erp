@@ -49,3 +49,24 @@ export async function deleteUser(userId: string) {
   
   return { success: true, data };
 }
+
+// 4. List all staff users (Admin only)
+export async function listStaffUsers() {
+  const { data, error } = await supabaseAdmin.auth.admin.listUsers();
+  
+  if (error) {
+    console.error('Error listing users:', error.message);
+    return { success: false, error: error.message, users: [] };
+  }
+
+  const users = (data?.users || []).map((u) => ({
+    id: u.id,
+    email: u.email || '',
+    fullName: u.user_metadata?.fullName || u.email?.split('@')[0] || 'Unknown',
+    role: (u.user_metadata?.role || 'OPERATOR').toUpperCase(),
+    createdAt: u.created_at,
+    lastSignInAt: u.last_sign_in_at || null,
+  }));
+
+  return { success: true, users };
+}

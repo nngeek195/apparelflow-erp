@@ -24,30 +24,50 @@ export async function middleware(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser();
   const path = request.nextUrl.pathname;
 
-  // Protect all internal routes
+  // Protect internal routes from unauthenticated users
   if (!user && path !== '/login') {
     return NextResponse.redirect(new URL('/login', request.url));
   }
 
   if (user) {
-    const role = user.user_metadata?.role;
+    const rawRole = user.user_metadata?.role || '';
+    const role = rawRole.toUpperCase();
 
-    // The Supreme Admin can access everything. Everyone else is strictly scoped.
+    const getDestinationForRole = (r: string) => {
+      switch (r) {
+        case 'ADMIN': return '/admin';
+        case 'CUTTING_SUPERVISOR': return '/cutting-supervisor';
+        case 'CUTTING_VERIFIER': return '/verification';
+        case 'SEWING_SUPERVISOR': return '/sewing';
+        default: return '/login';
+      }
+    };
+
+    // If logged in and visiting /login, redirect directly to role dashboard
+    if (path === '/login') {
+      return NextResponse.redirect(new URL(getDestinationForRole(role), request.url));
+    }
+
+    // If visiting root /dashboard, redirect based on role
+    if (path === '/dashboard') {
+      return NextResponse.redirect(new URL(getDestinationForRole(role), request.url));
+    }
+
+    // Role-based route scoping:
+    // ADMIN can access EVERYTHING (/admin, /cutting-supervisor, /verification, /sewing, etc.)
+    // Non-admins can only access their designated departmental area
     if (role !== 'ADMIN') {
-      if (path.startsWith('/cutting-supervisor') && role !== 'CUTTING_SUPERVISOR') {
-        return NextResponse.redirect(new URL('/dashboard', request.url));
-      }
-      
-      if (path.startsWith('/verification') && role !== 'CUTTING_VERIFIER') {
-        return NextResponse.redirect(new URL('/dashboard', request.url));
-      }
-      
-      if (path.startsWith('/sewing') && role !== 'SEWING_SUPERVISOR') {
-        return NextResponse.redirect(new URL('/dashboard', request.url));
-      }
-
       if (path.startsWith('/admin')) {
-        return NextResponse.redirect(new URL('/dashboard', request.url));
+        return NextResponse.redirect(new URL(getDestinationForRole(role), request.url));
+      }
+      if (path.startsWith('/cutting-supervisor') && role !== 'CUTTING_SUPERVISOR') {
+        return NextResponse.redirect(new URL(getDestinationForRole(role), request.url));
+      }
+      if (path.startsWith('/verification') && role !== 'CUTTING_VERIFIER') {
+        return NextResponse.redirect(new URL(getDestinationForRole(role), request.url));
+      }
+      if (path.startsWith('/sewing') && role !== 'SEWING_SUPERVISOR') {
+        return NextResponse.redirect(new URL(getDestinationForRole(role), request.url));
       }
     }
   }
@@ -56,5 +76,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)'],
+  matcher: ['/((?!_next/static|_next/image|favicon.ico|api/.*|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)'],
 };
