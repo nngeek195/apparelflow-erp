@@ -8,13 +8,12 @@ export interface AuthUser {
   email: string;
   fullName: string;
   role: Role;
-  isDemo: boolean;
 }
 
 /**
  * Validates the caller's identity strictly via Firebase JWT ID Token.
  * Accepts token from Authorization header ('Bearer <jwt>') OR 'apparelflow_jwt' cookie.
- * If no valid token is provided, returns null to lock down the application.
+ * If no valid token is provided, returns null.
  */
 export async function getCurrentUser(): Promise<AuthUser | null> {
   const reqHeaders = await headers();
@@ -58,17 +57,11 @@ export async function getCurrentUser(): Promise<AuthUser | null> {
       });
     }
 
-    // Role switcher evaluation header or cookie (if supervisor wants to evaluate verifier/sewing perspective)
-    const demoRoleHeader = reqHeaders.get('x-demo-role') as Role | null;
-    const demoRoleCookie = reqCookies.get('apparelflow_role')?.value as Role | null;
-    const activeRole = demoRoleHeader || demoRoleCookie;
-
     return {
       id: dbUser.id,
       email: dbUser.email,
       fullName: dbUser.fullName,
-      role: activeRole && Object.values(Role).includes(activeRole) ? activeRole : dbUser.role,
-      isDemo: false,
+      role: dbUser.role,
     };
   } catch (err) {
     console.warn('Firebase JWT token verification failed:', err);

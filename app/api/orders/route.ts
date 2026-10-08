@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getCurrentUser } from '@/lib/authHelper';
+import { getNextOrderNo, getNextFabricRollId } from '@/lib/sequenceHelper';
 import { OrderStatus, ItemStatus, Role } from '@prisma/client';
 
 export async function GET(req: Request) {
@@ -59,10 +60,11 @@ export async function POST(req: Request) {
       );
     }
 
-    const { orderNo, recipeId, targetQty, fabricRollId, actualFabricYds, status } = await req.json();
+    const body = await req.json();
+    const { recipeId, targetQty, actualFabricYds, status } = body;
 
-    if (!orderNo || !recipeId || !targetQty || !fabricRollId || actualFabricYds === undefined) {
-      return NextResponse.json({ error: 'Missing required order fields' }, { status: 400 });
+    if (!recipeId || !targetQty || actualFabricYds === undefined) {
+      return NextResponse.json({ error: 'Missing required order fields (recipe, quantity, or actual yards)' }, { status: 400 });
     }
 
     // Fetch recipe and its components to calculate expected quantities
@@ -79,36 +81,69 @@ export async function POST(req: Request) {
     const fabricYds = parseFloat(actualFabricYds);
     const initialStatus = status || OrderStatus.PENDING_VERIFICATION;
 
-    // Create cutting order and auto-generate verification items for all recipe components
-    const order = await prisma.cuttingOrder.create({
-      data: {
-        orderNo,
-        recipeId,
-        targetQty: qty,
-        fabricRollId,
-        actualFabricYds: fabricYds,
-        status: initialStatus,
-        createdBy: user.id,
-        items: {
-          create: recipe.components.map((comp) => {
-            const expected = comp.piecesPerGarment * qty;
-            return {
-              componentId: comp.id,
-              expectedQty: expected,
-              actualQty: expected, // initial count matches expected
-              status: ItemStatus.GREEN,
-            };
-          }),
-        },
-      },
-      include: {
-        recipe: true,
-        items: {
-          include: { component: true },
-        },
-        creator: true,
-      },
-    });
+    // Auto-generate ascending unique numbers if missing or if collision occurs
+    let attempts = 0;
+    let order: any = null;
+
+    while (attempts < 5) {
+      attempts++;
+      // Determine order number: if provided and not duplicate on attempt 1, use it; otherwise auto-generate next
+      let assignedOrderNo = body.orderNo?.trim();
+      if (!assignedOrderNo || attempts > 1) {
+        assignedOrderNo = await getNextOrderNo();
+      } else {
+        // If provided, ensure it does not duplicate an existing order
+        const exists = await prisma.cuttingOrder.findUnique({ where: { orderNo: assignedOrderNo } });
+        if (exists) {
+          assignedOrderNo = await getNextOrderNo();
+        }
+      }
+
+      // Determine fabric roll ID
+      let assignedFabricRollId = body.fabricRollId?.trim();
+      if (!assignedFabricRollId) {
+        assignedFabricRollId = await getNextFabricRollId();
+      }
+
+      try {
+        order = await prisma.cuttingOrder.create({
+          data: {
+            orderNo: assignedOrderNo,
+            recipeId,
+            targetQty: qty,
+            fabricRollId: assignedFabricRollId,
+            actualFabricYds: fabricYds,
+            status: initialStatus,
+            createdBy: user.id,
+            items: {
+              create: recipe.components.map((comp) => {
+                const expected = comp.piecesPerGarment * qty;
+                return {
+                  componentId: comp.id,
+                  expectedQty: expected,
+                  actualQty: expected,
+                  status: ItemStatus.GREEN,
+                };
+              }),
+            },
+          },
+          include: {
+            recipe: true,
+            items: {
+              include: { component: true },
+            },
+            creator: true,
+          },
+        });
+        break; // Successfully created without duplicate
+      } catch (createErr: any) {
+        if (createErr.code === 'P2002' && attempts < 5) {
+          // Unique constraint hit: retry with next sequential ascending order number
+          continue;
+        }
+        throw createErr;
+      }
+    }
 
     return NextResponse.json({ success: true, order }, { status: 201 });
   } catch (error: any) {

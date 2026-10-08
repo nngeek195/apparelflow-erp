@@ -13,7 +13,6 @@ import {
   LogIn,
   Loader2,
   ShieldAlert,
-  Database,
 } from 'lucide-react';
 
 function LoginForm() {
@@ -115,7 +114,7 @@ function LoginForm() {
                 <input
                   type="email"
                   required
-                  placeholder="admin@apparelflow.com"
+                  placeholder="name@company.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="w-full pl-10 pr-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition"
@@ -132,7 +131,7 @@ function LoginForm() {
                 <input
                   type={showPassword ? 'text' : 'password'}
                   required
-                  placeholder="••••••••"
+                  placeholder="Password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   className="w-full pl-10 pr-10 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition"
@@ -205,15 +204,6 @@ function LoginForm() {
             )}
             <span>Sign in with Google OAuth</span>
           </button>
-        </div>
-
-        {/* Security & Cloud SQL Footnote */}
-        <div className="p-4 rounded-xl bg-slate-900/40 border border-slate-800/80 text-[11px] text-slate-500 text-center space-y-1">
-          <div className="flex items-center justify-center gap-1.5 text-slate-400 font-semibold">
-            <Database className="w-3.5 h-3.5 text-indigo-400" />
-            <span>Google Cloud SQL PostgreSQL • us-east4</span>
-          </div>
-          <div>All operations cryptographically authenticated via Firebase JWT tokens</div>
         </div>
       </div>
     </div>

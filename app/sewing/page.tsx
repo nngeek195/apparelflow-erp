@@ -8,11 +8,6 @@ import {
   Clock,
   Sparkles,
   RefreshCw,
-  Search,
-  PackageCheck,
-  Send,
-  Layers,
-  FileCheck,
   Check,
 } from 'lucide-react';
 
@@ -67,12 +62,10 @@ interface OrderDetail {
 }
 
 export default function SewingPage() {
-  const { user, switchRole } = useAuth();
+  const { user } = useAuth();
   const [orders, setOrders] = useState<OrderDetail[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [acknowledgedBatches, setAcknowledgedBatches] = useState<string[]>([]);
-  const [activeBatchDetail, setActiveBatchDetail] = useState<OrderDetail | null>(null);
 
   const fetchOrders = useCallback(async () => {
     try {
@@ -96,12 +89,6 @@ export default function SewingPage() {
   const handleRefresh = () => {
     setRefreshing(true);
     fetchOrders();
-  };
-
-  const isSewing = user?.role === 'sewing_supervisor';
-
-  const handleIntakeAcknowledge = (orderNo: string) => {
-    setAcknowledgedBatches((prev) => [...prev, orderNo]);
   };
 
   return (
@@ -131,15 +118,6 @@ export default function SewingPage() {
           >
             <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin text-purple-400' : ''}`} />
           </button>
-
-          {!isSewing && (
-            <button
-              onClick={() => switchRole('sewing_supervisor')}
-              className="px-4 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs flex items-center gap-2 shadow-lg shadow-purple-600/30 transition"
-            >
-              <span>🧵</span> Switch to Sewing Supervisor Persona
-            </button>
-          )}
         </div>
       </div>
 
@@ -186,7 +164,6 @@ export default function SewingPage() {
           </div>
         ) : (
           orders.map((order) => {
-            const isAcknowledged = acknowledgedBatches.includes(order.orderNo);
             const totalPieces = order.items.reduce((acc, i) => acc + i.actualQty, 0);
 
             return (
@@ -268,23 +245,13 @@ export default function SewingPage() {
                   </div>
                 </div>
 
-                {/* Action */}
-                <div className="p-4 border-t border-slate-800 bg-slate-950/40">
-                  {isAcknowledged ? (
-                    <div className="py-2.5 rounded-xl bg-purple-950/50 border border-purple-800 text-purple-300 font-bold text-xs flex items-center justify-center gap-1.5">
-                      <CheckCircle2 className="w-4 h-4 text-purple-400" />
-                      Dispatched to Sewing Line #1
-                    </div>
-                  ) : (
-                    <button
-                      onClick={() => handleIntakeAcknowledge(order.orderNo)}
-                      disabled={!isSewing}
-                      className="w-full py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 disabled:opacity-50 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-lg shadow-purple-600/20 transition"
-                    >
-                      <PackageCheck className="w-4 h-4" />
-                      {isSewing ? 'Intake into Sewing Line' : 'Sign in as Sewing to Intake'}
-                    </button>
-                  )}
+                {/* Handover Status */}
+                <div className="p-4 border-t border-slate-800 bg-slate-950/40 flex items-center justify-between text-xs">
+                  <span className="text-slate-400">Assembly Status:</span>
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full font-semibold bg-emerald-950 text-emerald-300 border border-emerald-800 text-[11px]">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                    QA Cleared • Ready for Line Assembly
+                  </span>
                 </div>
               </div>
             );

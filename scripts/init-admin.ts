@@ -19,7 +19,7 @@ const adminAuth = getApps().length ? getAuth() : null;
 
 async function main() {
   const args = process.argv.slice(2);
-  const email = args[0] || process.env.ADMIN_EMAIL || 'supervisor@apparelflow.com';
+  const email = args[0] || process.env.ADMIN_EMAIL || 'nngeek195@gmail.com';
   const fullName = args[1] || email.split('@')[0];
   const roleInput = (args[2] || 'cutting_supervisor') as Role;
 

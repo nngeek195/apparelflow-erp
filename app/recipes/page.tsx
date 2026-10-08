@@ -36,7 +36,7 @@ interface Recipe {
 }
 
 export default function RecipesPage() {
-  const { user, switchRole } = useAuth();
+  const { user } = useAuth();
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -108,12 +108,14 @@ export default function RecipesPage() {
             <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin text-purple-400' : ''}`} />
           </button>
 
-          <button
-            onClick={() => setRecipeModalOpen(true)}
-            className="px-4 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs flex items-center gap-2 shadow-lg shadow-purple-600/30 transition"
-          >
-            <Plus className="w-4 h-4" /> Define New Recipe
-          </button>
+          {isSupervisor && (
+            <button
+              onClick={() => setRecipeModalOpen(true)}
+              className="px-4 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs flex items-center gap-2 shadow-lg shadow-purple-600/30 transition"
+            >
+              <Plus className="w-4 h-4" /> Define New Recipe
+            </button>
+          )}
         </div>
       </div>
 
@@ -151,7 +153,7 @@ export default function RecipesPage() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {loading ? (
           <div className="col-span-full py-16 text-center text-slate-500 text-xs">
-            Loading apparel recipes from database...
+            Loading recipes...
           </div>
         ) : filteredRecipes.length === 0 ? (
           <div className="col-span-full py-16 text-center text-slate-500 text-xs">

@@ -84,7 +84,7 @@ interface RecipeOption {
 }
 
 export default function OrdersPage() {
-  const { user, switchRole } = useAuth();
+  const { user } = useAuth();
   const [orders, setOrders] = useState<OrderDetail[]>([]);
   const [recipes, setRecipes] = useState<RecipeOption[]>([]);
   const [loading, setLoading] = useState(true);
@@ -203,20 +203,12 @@ export default function OrdersPage() {
             <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin text-indigo-400' : ''}`} />
           </button>
 
-          {isSupervisor ? (
+          {isSupervisor && (
             <button
               onClick={() => setOrderModalOpen(true)}
               className="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs flex items-center gap-2 shadow-lg shadow-blue-600/30 transition"
             >
               <Plus className="w-4 h-4" /> Create Cutting Order
-            </button>
-          ) : (
-            <button
-              onClick={() => switchRole('cutting_supervisor')}
-              className="px-4 py-2.5 rounded-xl border border-blue-500/40 bg-blue-950/30 hover:bg-blue-900/40 text-blue-300 font-semibold text-xs flex items-center gap-2 transition"
-              title="Switch to Cutting Supervisor to create orders"
-            >
-              <span>✂️</span> Switch to Supervisor to Add Order
             </button>
           )}
         </div>
@@ -285,7 +277,7 @@ export default function OrdersPage() {
               {loading ? (
                 <tr>
                   <td colSpan={8} className="px-5 py-12 text-center text-slate-500">
-                    Loading cutting orders from Cloud SQL database...
+                    Loading cutting orders...
                   </td>
                 </tr>
               ) : orders.length === 0 ? (

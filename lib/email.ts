@@ -24,7 +24,7 @@ export async function sendVerificationEmail({
   wastageCap,
   verifierName,
   rejectionNote,
-  toEmail = 'audit@apparelflow.com',
+  toEmail = process.env.AUDIT_EMAIL || 'audit@apparelflow.com',
 }: VerificationAlertParams) {
   if (!resend) {
     console.warn('[Resend] API key not found. Skipping email dispatch.');

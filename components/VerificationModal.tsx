@@ -189,7 +189,7 @@ export default function VerificationModal({
               <span>
                 <strong>Read-Only Preview:</strong> You are currently signed in as{' '}
                 <span className="capitalize font-semibold underline">{user?.role?.replace('_', ' ')}</span>.
-                Switch to <strong>Cutting Verifier</strong> using the top bar to submit approvals or rejections.
+                Only authorized <strong>Cutting Verifiers</strong> can submit approvals or rejections.
               </span>
             </div>
           </div>
@@ -421,7 +421,7 @@ export default function VerificationModal({
         <div className="px-6 py-4 border-t border-slate-800 bg-slate-950/60 flex items-center justify-between">
           <div className="text-xs text-slate-500 flex items-center gap-1.5">
             <Send className="w-3.5 h-3.5 text-indigo-400" />
-            <span>Automated dispatch via Resend will notify the team upon sign-off</span>
+            <span>Audit confirmation email will be sent automatically upon sign-off</span>
           </div>
 
           <div className="flex items-center gap-3">

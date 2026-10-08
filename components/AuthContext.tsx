@@ -17,14 +17,6 @@ export interface UserProfile {
   email: string;
   fullName: string;
   role: Role;
-  isDemo: boolean;
-}
-
-interface RoleOption {
-  role: Role;
-  title: string;
-  description: string;
-  avatar: string;
 }
 
 interface AuthContextType {
@@ -33,31 +25,9 @@ interface AuthContextType {
   loading: boolean;
   signInWithCredentials: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
   signInWithGoogle: (initialRole?: Role) => Promise<{ success: boolean; error?: string }>;
-  switchRole: (role: Role) => Promise<void>;
+  getIdToken: () => Promise<string | null>;
   logout: () => Promise<void>;
-  availableRoles: RoleOption[];
 }
-
-const defaultRoles: RoleOption[] = [
-  {
-    role: 'cutting_supervisor',
-    title: 'Cutting Supervisor',
-    description: 'Creates orders, tracks fabric consumption & cutting flow',
-    avatar: '✂️',
-  },
-  {
-    role: 'cutting_verifier',
-    title: 'Cutting Verifier',
-    description: 'Component piece counts, color status flags & QA sign-off',
-    avatar: '🔍',
-  },
-  {
-    role: 'sewing_supervisor',
-    title: 'Sewing Supervisor',
-    description: 'Accepts verified batches into sewing line assembly',
-    avatar: '🧵',
-  },
-];
 
 const AuthContext = createContext<AuthContextType>({
   user: null,
@@ -65,9 +35,8 @@ const AuthContext = createContext<AuthContextType>({
   loading: true,
   signInWithCredentials: async () => ({ success: false }),
   signInWithGoogle: async () => ({ success: false }),
-  switchRole: async () => {},
+  getIdToken: async () => null,
   logout: async () => {},
-  availableRoles: defaultRoles,
 });
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -109,10 +78,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           });
           if (syncRes.ok) {
             const data = await syncRes.json();
-            setUser({
-              ...data.user,
-              isDemo: false,
-            });
+            setUser(data.user);
           }
         } catch (syncErr) {
           console.error('Firebase backend sync failed:', syncErr);
@@ -123,17 +89,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => unsubscribe();
   }, [fetchSession]);
 
-  // Sign In with Email & Password credentials (from Firebase Authentication users)
+  // Sign In with Email & Password credentials
   const signInWithCredentials = async (email: string, password: string) => {
     setLoading(true);
     try {
-      // 1. Firebase client authentication
       const result = await signInWithEmailAndPassword(auth, email.trim(), password);
-      
-      // 2. Extract Firebase JWT ID Token
       const idToken = await result.user.getIdToken(true);
 
-      // 3. Cryptographically register / sync on Cloud SQL backend & set JWT cookie
       const syncRes = await fetch('/api/auth/register-admin', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -146,10 +108,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       const data = await syncRes.json();
-      setUser({
-        ...data.user,
-        isDemo: false,
-      });
+      setUser(data.user);
 
       return { success: true };
     } catch (err: any) {
@@ -187,33 +146,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       const data = await res.json();
-      setUser({
-        ...data.user,
-        isDemo: false,
-      });
+      setUser(data.user);
       return { success: true };
     } catch (err: any) {
       console.error('Google Sign-In failed:', err);
       return { success: false, error: err.message };
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // 1-Click Role Switcher for Evaluation
-  const switchRole = async (newRole: Role) => {
-    setLoading(true);
-    try {
-      const res = await fetch('/api/auth/switch-role', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ role: newRole }),
-      });
-      if (res.ok) {
-        await fetchSession();
-      }
-    } catch (err) {
-      console.error('Failed to switch role:', err);
     } finally {
       setLoading(false);
     }
@@ -232,6 +169,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const getIdToken = async (): Promise<string | null> => {
+    if (!firebaseUser) return null;
+    try {
+      return await firebaseUser.getIdToken();
+    } catch {
+      return null;
+    }
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -240,9 +186,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         loading,
         signInWithCredentials,
         signInWithGoogle,
-        switchRole,
+        getIdToken,
         logout,
-        availableRoles: defaultRoles,
       }}
     >
       {children}

@@ -128,7 +128,7 @@ export default function AuditLogsPage() {
           <span className="text-2xl font-mono font-bold text-white mt-1 block">
             {totalAudits}
           </span>
-          <span className="text-[11px] text-slate-500 mt-0.5 block">Recorded in Cloud SQL</span>
+          <span className="text-[11px] text-slate-500 mt-0.5 block">Logged compliance sign-offs</span>
         </div>
 
         <div className="p-4 rounded-2xl bg-slate-900/60 border border-slate-800">

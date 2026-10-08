@@ -17,7 +17,6 @@ import {
   FileSpreadsheet,
   Plus,
   RefreshCw,
-  Database,
   Shield,
   ArrowRight,
   TrendingUp,
@@ -101,7 +100,7 @@ interface RecipeOption {
 }
 
 export default function Dashboard() {
-  const { user, switchRole, availableRoles } = useAuth();
+  const { user } = useAuth();
   const [stats, setStats] = useState<Stats | null>(null);
   const [orders, setOrders] = useState<OrderItem[]>([]);
   const [recipes, setRecipes] = useState<RecipeOption[]>([]);
@@ -198,7 +197,7 @@ export default function Dashboard() {
           <div className="space-y-2">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-indigo-500/10 text-indigo-300 border border-indigo-500/30">
               <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
-              <span>ApparelFlow Enterprise v1.0 • GCP Cloud SQL us-east4</span>
+              <span>Manufacturing Operations Portal</span>
             </div>
             <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white">
               Apparel Operations & Quality Verification
@@ -262,36 +261,18 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* 1-Click Role Switcher inside Dashboard for Quick Evaluation */}
-        <div className="mt-6 pt-5 border-t border-slate-800/80 flex flex-wrap items-center justify-between gap-4 text-xs">
-          <div className="flex items-center gap-2 text-slate-400">
-            <Shield className="w-4 h-4 text-indigo-400" />
-            <span>Active Persona:</span>
-            <span className="font-semibold text-white capitalize">
-              {user?.role.replace('_', ' ')} ({user?.fullName})
-            </span>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <span className="text-slate-500 font-medium">Switch view for evaluation:</span>
-            <div className="flex items-center gap-1.5 bg-slate-950/60 p-1 rounded-xl border border-slate-800">
-              {availableRoles.map((r) => (
-                <button
-                  key={r.role}
-                  onClick={() => switchRole(r.role)}
-                  className={`px-3 py-1 rounded-lg font-medium transition flex items-center gap-1.5 text-xs ${
-                    user?.role === r.role
-                      ? 'bg-indigo-600 text-white shadow-sm font-semibold'
-                      : 'text-slate-400 hover:text-slate-200 hover:bg-slate-850'
-                  }`}
-                >
-                  <span>{r.avatar}</span>
-                  <span>{r.title}</span>
-                </button>
-              ))}
+        {/* User Identity Display */}
+        {user && (
+          <div className="mt-6 pt-4 border-t border-slate-800/80 flex items-center justify-between gap-4 text-xs">
+            <div className="flex items-center gap-2 text-slate-400">
+              <Shield className="w-4 h-4 text-indigo-400" />
+              <span>Signed in as:</span>
+              <span className="font-semibold text-white capitalize">
+                {user.fullName} ({user.role.replace('_', ' ')})
+              </span>
             </div>
           </div>
-        </div>
+        )}
       </div>
 
       {/* KPI Stats Overview */}
@@ -474,26 +455,32 @@ export default function Dashboard() {
             </div>
 
             <div className="space-y-2.5">
-              {recipes.slice(0, 4).map((r) => (
-                <div
-                  key={r.id}
-                  className="p-3 rounded-xl bg-slate-950/80 border border-slate-800/80 hover:border-slate-700 transition"
-                >
-                  <div className="flex items-center justify-between text-xs font-semibold text-white">
-                    <span className="truncate">{r.name}</span>
-                    <span className="text-indigo-400 font-mono text-[11px]">{r.recipeCode}</span>
-                  </div>
-                  <div className="mt-1 flex items-center justify-between text-[11px] text-slate-400">
-                    <span>
-                      Std: <strong className="text-slate-300">{r.stdFabricYards} yds</strong>
-                    </span>
-                    <span>
-                      Cap: <strong className="text-emerald-400">{r.wastageCap}%</strong>
-                    </span>
-                    <span>{r.components.length} components</span>
-                  </div>
+              {recipes.length === 0 ? (
+                <div className="p-4 rounded-xl bg-slate-950/60 border border-slate-800/80 text-center text-slate-500 text-xs">
+                  No recipes registered yet. Define your first style recipe to get started.
                 </div>
-              ))}
+              ) : (
+                recipes.slice(0, 4).map((r) => (
+                  <div
+                    key={r.id}
+                    className="p-3 rounded-xl bg-slate-950/80 border border-slate-800/80 hover:border-slate-700 transition"
+                  >
+                    <div className="flex items-center justify-between text-xs font-semibold text-white">
+                      <span className="truncate">{r.name}</span>
+                      <span className="text-indigo-400 font-mono text-[11px]">{r.recipeCode}</span>
+                    </div>
+                    <div className="mt-1 flex items-center justify-between text-[11px] text-slate-400">
+                      <span>
+                        Std: <strong className="text-slate-300">{r.stdFabricYards} yds</strong>
+                      </span>
+                      <span>
+                        Cap: <strong className="text-emerald-400">{r.wastageCap}%</strong>
+                      </span>
+                      <span>{r.components.length} components</span>
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
 
             {isSupervisor && (
@@ -504,33 +491,6 @@ export default function Dashboard() {
                 <Plus className="w-3.5 h-3.5" /> Define New Style Recipe
               </button>
             )}
-          </div>
-
-          {/* Cloud Infrastructure Verification Log */}
-          <div className="p-5 rounded-2xl bg-slate-900/60 border border-slate-800 space-y-3">
-            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-2">
-              <Database className="w-3.5 h-3.5 text-emerald-400" />
-              Stack & Infrastructure Status
-            </h3>
-
-            <div className="space-y-2 text-xs">
-              <div className="flex items-center justify-between p-2 rounded-lg bg-slate-950/60 border border-slate-800">
-                <span className="text-slate-400">Database Engine</span>
-                <span className="font-mono text-emerald-400 font-medium">Cloud SQL PostgreSQL</span>
-              </div>
-              <div className="flex items-center justify-between p-2 rounded-lg bg-slate-950/60 border border-slate-800">
-                <span className="text-slate-400">GCP Region</span>
-                <span className="font-mono text-slate-200">us-east4</span>
-              </div>
-              <div className="flex items-center justify-between p-2 rounded-lg bg-slate-950/60 border border-slate-800">
-                <span className="text-slate-400">Auth & Tokens</span>
-                <span className="font-mono text-indigo-300">Firebase Admin SDK</span>
-              </div>
-              <div className="flex items-center justify-between p-2 rounded-lg bg-slate-950/60 border border-slate-800">
-                <span className="text-slate-400">Email Dispatcher</span>
-                <span className="font-mono text-slate-200">Resend API v2</span>
-              </div>
-            </div>
           </div>
         </div>
       </div>

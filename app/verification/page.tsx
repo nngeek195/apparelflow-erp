@@ -70,7 +70,7 @@ interface OrderDetail {
 }
 
 export default function VerificationPage() {
-  const { user, switchRole } = useAuth();
+  const { user } = useAuth();
   const [orders, setOrders] = useState<OrderDetail[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -135,38 +135,21 @@ export default function VerificationPage() {
           >
             <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin text-indigo-400' : ''}`} />
           </button>
-
-          {!isVerifier && (
-            <button
-              onClick={() => switchRole('cutting_verifier')}
-              className="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center gap-2 shadow-lg shadow-emerald-600/30 transition"
-            >
-              <span>🔍</span> Switch to Cutting Verifier Persona
-            </button>
-          )}
         </div>
       </div>
 
       {/* Verifier Role Notice Banner */}
       {!isVerifier && (
-        <div className="p-4 rounded-2xl bg-amber-950/30 border border-amber-900/50 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-amber-300">
-          <div className="flex items-center gap-3">
-            <AlertTriangle className="w-5 h-5 text-amber-400 shrink-0" />
-            <div>
-              <p className="font-semibold text-amber-200">
-                You are currently previewing in read-only mode as {user?.fullName} ({user?.role.replace('_', ' ')}).
-              </p>
-              <p className="text-amber-400/80 mt-0.5">
-                Signing off on quality audits or issuing rejections requires the <strong>cutting_verifier</strong> RBAC permission.
-              </p>
-            </div>
+        <div className="p-4 rounded-2xl bg-amber-950/30 border border-amber-900/50 flex items-center gap-3 text-xs text-amber-300">
+          <AlertTriangle className="w-5 h-5 text-amber-400 shrink-0" />
+          <div>
+            <p className="font-semibold text-amber-200">
+              Read-only mode ({user ? `${user.fullName} • ${user.role.replace('_', ' ')}` : 'User'}).
+            </p>
+            <p className="text-amber-400/80 mt-0.5">
+              Signing off on quality audits or issuing rejections requires the <strong>cutting_verifier</strong> RBAC permission.
+            </p>
           </div>
-          <button
-            onClick={() => switchRole('cutting_verifier')}
-            className="px-3 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-500 text-white font-bold transition whitespace-nowrap self-start sm:self-auto"
-          >
-            Switch to Verifier
-          </button>
         </div>
       )}
 
