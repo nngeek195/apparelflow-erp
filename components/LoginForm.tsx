@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/utils/supabase/client';
-import RoleSwitcher from '@/components/RoleSwitcher';
+
 import { Lock, Mail, Shield, AlertCircle, ArrowRight } from 'lucide-react';
 
 export default function LoginForm() {
@@ -50,20 +50,20 @@ export default function LoginForm() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[#0d0714] p-4 sm:p-6">
-      <div className="w-full max-w-lg bg-[#160d24] border border-[#372458] rounded-2xl shadow-2xl p-6 sm:p-8">
+    <div className="flex min-h-screen items-center justify-center bg-slate-50 p-4 sm:p-6">
+      <div className="w-full max-w-lg bg-white border border-slate-200 rounded-3xl shadow-xl p-6 sm:p-8">
         
         {/* Header */}
         <div className="text-center mb-6">
-          <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-gradient-to-br from-amber-500/20 to-purple-600/30 border border-amber-500/30 mb-3 shadow-inner">
-            <Shield className="w-6 h-6 text-amber-400" />
+          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-purple-50 border border-purple-200 text-purple-700 mb-3 shadow-xs">
+            <Shield className="w-7 h-7 text-purple-700" />
           </div>
-          <h1 className="text-2xl font-black text-white tracking-tight">ApparelFlow ERP</h1>
-          <p className="text-xs text-slate-400 mt-1">Multi-Role Manufacturing & Quality Verification Portal</p>
+          <h1 className="text-2xl font-black text-slate-900 tracking-tight">ApparelFlow ERP</h1>
+          <p className="text-xs text-slate-500 mt-1">Multi-Role Manufacturing & Quality Verification Portal</p>
         </div>
 
         {error && (
-          <div className="mb-5 p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs flex items-center gap-2">
+          <div className="mb-5 p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center gap-2">
             <AlertCircle className="w-4 h-4 shrink-0" />
             <span>{error}</span>
           </div>
@@ -71,14 +71,14 @@ export default function LoginForm() {
 
         <form onSubmit={handleLogin} className="space-y-4">
           <div>
-            <label className="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1.5">
+            <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
               Staff Email
             </label>
             <div className="relative">
-              <Mail className="w-4 h-4 text-slate-500 absolute left-3.5 top-3" />
+              <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
               <input
                 type="email"
-                className="w-full pl-10 pr-4 py-2.5 bg-[#0d0714] border border-[#372458] focus:border-amber-500 focus:ring-1 focus:ring-amber-500 rounded-xl text-white text-sm outline-none transition placeholder-slate-600"
+                className="w-full pl-10 pr-4 py-2.5 bg-slate-50/70 border border-slate-200 focus:bg-white focus:border-purple-600 focus:ring-2 focus:ring-purple-100 rounded-xl text-slate-900 text-sm outline-none transition placeholder-slate-400"
                 placeholder="staff@apparelflow.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -88,14 +88,14 @@ export default function LoginForm() {
           </div>
 
           <div>
-            <label className="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1.5">
+            <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
               Password
             </label>
             <div className="relative">
-              <Lock className="w-4 h-4 text-slate-500 absolute left-3.5 top-3" />
+              <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
               <input
                 type="password"
-                className="w-full pl-10 pr-4 py-2.5 bg-[#0d0714] border border-[#372458] focus:border-amber-500 focus:ring-1 focus:ring-amber-500 rounded-xl text-white text-sm outline-none transition placeholder-slate-600"
+                className="w-full pl-10 pr-4 py-2.5 bg-slate-50/70 border border-slate-200 focus:bg-white focus:border-purple-600 focus:ring-2 focus:ring-purple-100 rounded-xl text-slate-900 text-sm outline-none transition placeholder-slate-400"
                 placeholder="••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
@@ -107,15 +107,12 @@ export default function LoginForm() {
           <button
             type="submit"
             disabled={submitting}
-            className="w-full py-3 rounded-xl bg-gradient-to-r from-amber-600 via-amber-500 to-amber-600 hover:from-amber-500 hover:to-amber-400 text-black font-extrabold text-sm shadow-lg shadow-amber-500/20 transition flex items-center justify-center gap-2 disabled:opacity-50"
+            className="w-full py-3 rounded-xl bg-purple-700 hover:bg-purple-800 text-white font-bold text-sm shadow-md hover:shadow-lg transition flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer"
           >
             <span>{submitting ? 'Verifying Credentials...' : 'Sign In to Workplace'}</span>
-            <ArrowRight className="w-4 h-4 text-black" />
+            <ArrowRight className="w-4 h-4" />
           </button>
         </form>
-
-        {/* 1-Click Role Switcher for Assessment Evaluation */}
-        <RoleSwitcher />
       </div>
     </div>
   );
