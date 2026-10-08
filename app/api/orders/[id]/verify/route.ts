@@ -84,9 +84,19 @@ export async function POST(
         data: { status: newStatus },
       });
 
-      // Create Immutable Audit Log
-      await tx.verificationLog.create({
-        data: {
+      // Upsert Audit Log — handles re-verification of previously rejected orders
+      // (orderId is @unique, so create fails if a prior rejection log already exists)
+      await tx.verificationLog.upsert({
+        where: { orderId },
+        update: {
+          verifierId: user.id,
+          verifierName: user.user_metadata?.fullName || 'Unknown',
+          decision,
+          rejectionNote: decision === 'REJECTED' ? rejectionNote : null,
+          wastagePct: Number(wastagePct.toFixed(2)),
+          timestamp: new Date(),
+        },
+        create: {
           orderId,
           verifierId: user.id,
           verifierName: user.user_metadata?.fullName || 'Unknown',
