@@ -1,69 +1,60 @@
-import { NextResponse } from 'next/server';
-import type { NextRequest } from 'next/server';
+import { type NextRequest, NextResponse } from 'next/server';
+import { createServerClient } from '@supabase/ssr';
 
-export function middleware(request: NextRequest) {
-  const { pathname } = request.nextUrl;
-  const token = request.cookies.get('apparelflow_jwt')?.value;
-  const authHeader = request.headers.get('authorization');
-  const hasAuth = Boolean(token || authHeader?.startsWith('Bearer '));
+export async function middleware(request: NextRequest) {
+  let supabaseResponse = NextResponse.next({ request });
 
-  // 1. Allow public static assets and system files
-  if (
-    pathname.startsWith('/_next') ||
-    pathname.startsWith('/favicon.ico') ||
-    pathname.startsWith('/next.svg') ||
-    pathname.startsWith('/vercel.svg')
-  ) {
-    return NextResponse.next();
-  }
-
-  // 2. Allow public auth endpoints
-  if (
-    pathname === '/api/auth/register-admin' ||
-    pathname === '/api/auth/login' ||
-    pathname === '/api/auth/logout'
-  ) {
-    return NextResponse.next();
-  }
-
-  // 3. Handle /login route
-  if (pathname === '/login') {
-    // If user already holds a valid JWT token, redirect straight to dashboard
-    if (token) {
-      return NextResponse.redirect(new URL('/', request.url));
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() { return request.cookies.getAll(); },
+        setAll(cookiesToSet: Array<{ name: string; value: string; options?: any }>) {
+          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
+          supabaseResponse = NextResponse.next({ request });
+          cookiesToSet.forEach(({ name, value, options }) =>
+            supabaseResponse.cookies.set(name, value, options)
+          );
+        },
+      },
     }
-    return NextResponse.next();
+  );
+
+  const { data: { user } } = await supabase.auth.getUser();
+  const path = request.nextUrl.pathname;
+
+  // Protect all internal routes
+  if (!user && path !== '/login') {
+    return NextResponse.redirect(new URL('/login', request.url));
   }
 
-  // 4. Lock down protected API routes
-  if (pathname.startsWith('/api/')) {
-    if (!hasAuth) {
-      return NextResponse.json(
-        { error: 'Unauthorized: Authentication required. Please provide a valid Firebase JWT token.' },
-        { status: 401 }
-      );
+  if (user) {
+    const role = user.user_metadata?.role;
+
+    // The Supreme Admin can access everything. Everyone else is strictly scoped.
+    if (role !== 'ADMIN') {
+      if (path.startsWith('/cutting-supervisor') && role !== 'CUTTING_SUPERVISOR') {
+        return NextResponse.redirect(new URL('/dashboard', request.url));
+      }
+      
+      if (path.startsWith('/verification') && role !== 'CUTTING_VERIFIER') {
+        return NextResponse.redirect(new URL('/dashboard', request.url));
+      }
+      
+      if (path.startsWith('/sewing') && role !== 'SEWING_SUPERVISOR') {
+        return NextResponse.redirect(new URL('/dashboard', request.url));
+      }
+
+      if (path.startsWith('/admin')) {
+        return NextResponse.redirect(new URL('/dashboard', request.url));
+      }
     }
-    return NextResponse.next();
   }
 
-  // 5. Lock down all ERP pages (/, /orders, /verification, /sewing, /recipes, /audit-logs, etc.)
-  if (!token) {
-    const loginUrl = new URL('/login', request.url);
-    loginUrl.searchParams.set('redirect', pathname);
-    return NextResponse.redirect(loginUrl);
-  }
-
-  return NextResponse.next();
+  return supabaseResponse;
 }
 
 export const config = {
-  matcher: [
-    /*
-     * Match all request paths except:
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico, images
-     */
-    '/((?!_next/static|_next/image|favicon.ico).*)',
-  ],
+  matcher: ['/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)'],
 };
